@@ -23,7 +23,7 @@ def invalidate_shape(valid_shape, dim_max):
   given a valid matrix shape, change one of the dimsizes to make it invalid
   """
   new_shape = list(valid_shape)
-  dim_invalidate = -2 # for now, always do this one (invalidates np.matmul)
+  dim_invalidate = -2  # for now, always invalidate this one (invalidates np.matmul, and all ops where dims must match)
   valid = True
   while valid:
     new_value = random.randint(1, dim_max)
@@ -88,7 +88,7 @@ ops = {
     "hadamard": {"func": np.multiply, "gen_b": same_b, "string_beg": "Compute the hadamard product of a matrix of shape {} with a matrix of shape {}.", "string_mid": "Compute the hadamard product of the result with a matrix of shape {}."},
     "add": {"func": np.add, "gen_b": same_b, "string_beg": "Add a matrix of shape {} to a matrix of shape {}.", "string_mid": "Add the result to a matrix of shape {}."},
     "subtract": {"func": np.subtract, "gen_b": same_b, "string_beg": "Subtract a matrix of shape {} from a matrix of shape {}.", "string_mid": "Subtract the result from a matrix of shape {}."},
-    #"kronecker": {"func": np.kron, "gen_b": kron_b, "string_beg": "Compute the kronecker product of a matrix of shape {} with a matrix of shape {}.", "string_mid": "Compute the kronecker product of the result with a matrix of shape {}."},
+    "kronecker": {"func": np.kron, "gen_b": kron_b, "string_beg": "Compute the kronecker product of a matrix of shape {} with a matrix of shape {}.", "string_mid": "Compute the kronecker product of the result with a matrix of shape {}."},
     "sum_axis": {"func": np.sum, "gen_b": sum_axis_b, "string_beg": "Take a matrix of shape {} and sum over the {} axis.", "string_mid": "Sum the result over the {} axis."}
 }
 
