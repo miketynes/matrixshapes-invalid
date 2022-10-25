@@ -16,6 +16,19 @@ def random_a_shape(dims_max=4):
   shape_a = np.random.randint(2, dims_max, dims)
   return tuple(shape_a)
 
+def invalidate_shape(valid_shape, dim_max):
+  """
+  given a valid matrix shape, change one of the dimsizes to make it invalid
+  """
+  new_shape = list(valid_shape)
+  dim_invalidate = 0#np.random.choice(len(valid_shape))
+  valid = True
+  while valid:
+    new_value = np.random.randint(1, dim_max + 1)
+    valid = new_value == valid_shape[dim_invalidate]
+  new_shape[dim_invalidate] = new_value
+  return tuple(new_shape)
+
 def multiply_b(shape_a, dim_max=5):
   """
   Generates compatible matrix b to muliply given shape of a 
@@ -73,11 +86,11 @@ ops = {
     "hadamard": {"func": np.multiply, "gen_b": same_b, "string_beg": "Compute the hadamard product of a matrix of shape {} with a matrix of shape {}.", "string_mid": "Compute the hadamard product of the result with a matrix of shape {}."},
     "add": {"func": np.add, "gen_b": same_b, "string_beg": "Add a matrix of shape {} to a matrix of shape {}.", "string_mid": "Add the result to a matrix of shape {}."},
     "subtract": {"func": np.subtract, "gen_b": same_b, "string_beg": "Subtract a matrix of shape {} from a matrix of shape {}.", "string_mid": "Subtract the result from a matrix of shape {}."},
-    "kronecker": {"func": np.kron, "gen_b": kron_b, "string_beg": "Compute the kronecker product of a matrix of shape {} with a matrix of shape {}.", "string_mid": "Compute the kronecker product of the result with a matrix of shape {}."},
+    #"kronecker": {"func": np.kron, "gen_b": kron_b, "string_beg": "Compute the kronecker product of a matrix of shape {} with a matrix of shape {}.", "string_mid": "Compute the kronecker product of the result with a matrix of shape {}."},
     "sum_axis": {"func": np.sum, "gen_b": sum_axis_b, "string_beg": "Take a matrix of shape {} and sum over the {} axis.", "string_mid": "Sum the result over the {} axis."}
 }
 
-def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4):
+def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4, invalid=False):
     """
     Generates an input example for the matrixshapes language task
     args: 
@@ -92,6 +105,8 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4):
     """
     input = ""
 
+    op_invalidate = random.randint(0, num_ops-1) if invalid else -1
+    this_op_invalid = op_invalidate == 0
     if shape_start is None:
       shape_start = random_a_shape(dims_max=dims_max)
     num_ops = random.randint(0,num_ops)
@@ -102,11 +117,12 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4):
     a = np.random.randint(0, dim_max, shape_start)
 
     # Generate first operation & select its subdict
-    op_beg = random.choice(list(ops.items()))[1]
+    op_beg_str, op_beg = random.choice(list(ops.items()))
 
     # Summing over axis requires at least 3 axes
-    while (op_beg["gen_b"] == sum_axis_b) and (len(a.shape) < 3):
-      op_beg = random.choice(list(ops.items()))[1]
+    while ((op_beg["gen_b"] == sum_axis_b) and (len(a.shape) < 3)) \
+            or (this_op_invalid and (op_beg_str in ["transpose", "sum_axis"])) :
+      op_beg_str, op_beg = random.choice(list(ops.items()))
 
     if op_beg["gen_b"] is None:
       a = op_beg["func"](a)
@@ -118,14 +134,15 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4):
       if op_beg["gen_b"] == sum_axis_b:
         input += op_beg["string_beg"].format(str(shape_start).replace(" ", ""), num_to_axis[b])
       else:
-        input += op_beg["string_beg"].format(str(shape_start).replace(" ", ""), str(b.shape).replace(" ", ""))
+        shape = invalidate_shape(b.shape, dim_max=dim_max) if this_op_invalid else b.shape
+        input += op_beg["string_beg"].format(str(shape_start).replace(" ", ""), str(shape).replace(" ", ""))
         shapes.append(b.shape)
 
       # Keep track of solution shape
       a = op_beg["func"](a, b)
 
     # Generate random list of operations
-    for i in range(num_ops):
+    for i in range(1, num_ops):
       op_mid = random.choice(list(ops.items()))[1]
 
       # Summing over axis requires at least 3 axes
@@ -150,7 +167,8 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4):
         # Keep track of solution shape
         a = op_mid["func"](a, b)
 
-    return input, str(a.shape).replace(" ", ""), a.shape in shapes
+    output_shape = "Invalid." if invalid else str(a.shape).replace(" ", "")
+    return input, output_shape, a.shape in shapes
 
 
 if __name__ == '__main__':
