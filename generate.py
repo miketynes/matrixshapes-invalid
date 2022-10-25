@@ -4,6 +4,8 @@ import numpy as np
 import random
 
 
+INVALIDATABLE = ['multiply', 'add', 'subtract', 'hadamard']
+
 def random_a_shape(dims_max=4):
   """
   Generates random shape for matrix a
@@ -121,7 +123,7 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4, invalid=False):
 
     # Summing over axis requires at least 3 axes
     while ((op_beg["gen_b"] == sum_axis_b) and (len(a.shape) < 3)) \
-            or (this_op_invalid and (op_beg_str in ["transpose", "sum_axis"])) :
+            or (this_op_invalid and (op_beg_str not in INVALIDATABLE)) :
       op_beg_str, op_beg = random.choice(list(ops.items()))
 
     if op_beg["gen_b"] is None:
