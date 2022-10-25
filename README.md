@@ -1,24 +1,39 @@
 # matrixshapes
-This task primes language models to keep track of matrixshapes.
+This task primes language models to keep track of matrixshapes, with the possibility of invalid matrix operations. 
+This is an extension of Niklas Muenninghoff's [matrixshapes]("https://github.com/Muennighoff/matrixshapes") work. 
+The goal is to see if transformers can detect whether a mathematical operation is correctly specified. 
 
-To generate a dataset, run:
-`git clone https://github.com/Muennighoff/matrixshapes.git`
-& cd into the repository.
-<br>
-Then run `python generate.py` for an example datum. Feel free to change the hyperparameters, such as more operations or higher dimensions (both will need more RAM).
-<br> <br>
-To create a json dataset run `python create_json.py --num 1000 --cont 0.5` for 1000 examples where a maximum of 500 shapes is also contained in the operations. 
-<br> <br>
-See the task.json for a dataset with num 5000, cont 0.5 & default values for generate.
+Requires: `numpy`
 
-This task is part of Google's BIG-Bench, see [here](https://github.com/google/BIG-bench/tree/main/bigbench/benchmark_tasks/matrixshapes).
+To generate a dataset, run: `git clone https://github.com/miketynes/matrixshapes.git`
+and cd into the repository.
+Then run `python generate.py`. Arguments are identical to those in Niklas Muenninghoff's 
+[matrixshapes]("https://github.com/Muennighoff/matrixshapes") work, with one additional argument: 
+* `--frac_invalid, float, default=0.5`, the fraction of examples where the given chain of matrix operations is invalid
+and one changed default: 
+* `--num` (number of examples), defaults to 100 instead of 1000.
 
-```
-@misc{matrixshapes,
-  author = {Muennighoff, Niklas},
-  title = {{Keeping track of matrix shapes after transformations}},
-  howpublished = {\url{https://github.com/Muennighoff/matrixshapes}},
-  year = 2021,
-  month = February
-}
-```
+**Supported operations**:   
+All matrix operations are on N-D arrays with N $\geq 2$. Operations follow `numpy` conventions.
+* Addition
+* Subtraction
+* Hadamard (elementwise) multiplication
+* Summing over a dimension
+* Transpose (reverse order of axes)
+* Matrix Multiplcation (numpy style: $AB$ where $A$ and $B$ are order $n$ tensors and the last index of $A$ 
+  must have the same size as the second-to-last index of $B$). 
+  Quoting the [numpy docs](https://numpy.org/doc/stable/reference/generated/numpy.matmul.html) 
+  "If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly."
+* Kronecker Product. Quoting the [numpy docs](https://numpy.org/doc/stable/reference/generated/numpy.kron.html)
+  "If `a.shape = (r0,r1,..,rN)` and `b.shape = (s0,s1,...,sN)`, the Kronecker product has shape `(r0*s0, r1*s1, ..., rN*SN)`"
+
+**Possibly invalid operations**
+Operations on two arrays which have constraints on the input matrix shapes may be invalidated. 
+This includes: Addition, Subtraction, Hadamard multiplication, and matrix multiplication.
+At most one operation will be invalidated per example.
+
+**Possible improvements**
+* Invalidate summing operations (e.g., sum over an axis that is not present)
+* Invalidate Kronecker Product (mismacth in N-D)
+* Invalidate more than one operation per example
+* More flexible selection of index of invalidation
