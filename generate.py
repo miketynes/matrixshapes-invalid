@@ -23,10 +23,10 @@ def invalidate_shape(valid_shape, dim_max):
   given a valid matrix shape, change one of the dimsizes to make it invalid
   """
   new_shape = list(valid_shape)
-  dim_invalidate = 0#np.random.choice(len(valid_shape))
+  dim_invalidate = -2 # for now, always do this one (invalidates np.matmul)
   valid = True
   while valid:
-    new_value = np.random.randint(1, dim_max + 1)
+    new_value = random.randint(1, dim_max)
     valid = new_value == valid_shape[dim_invalidate]
   new_shape[dim_invalidate] = new_value
   return tuple(new_shape)
@@ -106,12 +106,11 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4, invalid=False):
       boolean value if the label appears in the input
     """
     input = ""
-
-    op_invalidate = random.randint(0, num_ops-1) if invalid else -1
-    this_op_invalid = op_invalidate == 0
     if shape_start is None:
       shape_start = random_a_shape(dims_max=dims_max)
-    num_ops = random.randint(0,num_ops)
+    num_ops = random.randint(1, num_ops)  # there should always be at leaset 1 operation, and counts should start at 1!
+    op_invalidate = random.randint(0, num_ops-1) if invalid else -1  # but indexing starts at zero.
+    this_op_invalid = op_invalidate == 0
 
     # Keep track of shapes that are print out for confounders
     shapes = [shape_start]
@@ -143,13 +142,14 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4, invalid=False):
       # Keep track of solution shape
       a = op_beg["func"](a, b)
 
-    # Generate random list of operations
-    for i in range(1, num_ops):
-      op_mid = random.choice(list(ops.items()))[1]
-
+    # Generate random list of operations after the zero'th operation
+    for i in range(1, num_ops):  # this will be empty if num_ops is 1, because it starts at 1, but range is exclusive!
+      op_mid_str, op_mid = random.choice(list(ops.items()))
+      this_op_invalid = i == op_invalidate
       # Summing over axis requires at least 3 axes
-      while (op_mid["gen_b"] == sum_axis_b) and (len(a.shape) < 3):
-        op_mid = random.choice(list(ops.items()))[1]
+      while ((op_mid["gen_b"] == sum_axis_b) and (len(a.shape) < 3)) \
+            or (this_op_invalid and not (op_mid_str in INVALIDATABLE)):
+       op_mid_str, op_mid = random.choice(list(ops.items()))
 
       input += " "
 
@@ -163,7 +163,8 @@ def generate(shape_start=None, num_ops=5, dim_max=5, dims_max=4, invalid=False):
         if op_mid["gen_b"] == sum_axis_b:
           input += op_mid["string_mid"].format(num_to_axis[b])
         else:
-          input += op_mid["string_mid"].format(str(b.shape).replace(" ", ""))
+          shape = b.shape if not this_op_invalid else invalidate_shape(b.shape, dim_max)
+          input += op_mid["string_mid"].format(str(shape).replace(" ", ""))
           shapes.append(b.shape)
 
         # Keep track of solution shape
