@@ -9,7 +9,7 @@ def parse_args():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--num", type=int, default=1000, help="Task examples to generate.")
+    parser.add_argument("--num", type=int, default=100, help="Task examples to generate.")
     parser.add_argument("--cont", type=float, default=0.5, help="Percentage of how many examples are allowed to contain the label.")
     parser.add_argument("--frac_invalid", type=float, default=0.5)
     parser.add_argument("--num_ops", type=int, default=5)
